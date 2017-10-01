@@ -25,6 +25,8 @@ tf.app.flags.DEFINE_integer("task_index", 0, "Index of task")
 FLAGS = tf.app.flags.FLAGS
 
 
+# Sets this task's identity and informs other tasks on the cluster about it.
+# (Who is who and who am I.)
 server = tf.train.Server(cluster,
                          job_name=FLAGS.job_name,
                          task_index=FLAGS.task_index)
