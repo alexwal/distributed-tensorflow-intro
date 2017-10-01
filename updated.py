@@ -2,12 +2,15 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 from tensorflow.examples.tutorials.mnist import input_data
 
+import os
+import shutil
+
 
 BATCH_SIZE = 50
 TRAINING_STEPS = 1500
 PRINT_EVERY = 100
 LOG_DIR = "/tmp/log"
-
+if os.path.isdir(LOG_DIR): shutil.rmtree(LOG_DIR) # erase previous logs
 
 parameter_servers = ["localhost:2222"]
 workers = ["localhost:2223",
@@ -67,15 +70,15 @@ elif FLAGS.job_name == "worker":
 
         init_op = tf.global_variables_initializer()
 
-
-    class StopAtStepAndLogHook(tf.train.StopAtStepHook):
+    class LogAtEndHook(tf.train.SessionRunHook):
       def end(self, session):
+        # Called once just before session stops
         test_acc = session.run(accuracy, {x: mnist.test.images, y_: mnist.test.labels})
         print("Worker: {}, Test-Accuracy: {}".format(FLAGS.task_index, test_acc))
-        super().end(session)
 
     # The StopAtStepHook handles stopping after running given steps.
-    hooks=[StopAtStepAndLogHook(last_step=TRAINING_STEPS)]
+    hooks=[tf.train.StopAtStepHook(last_step=TRAINING_STEPS)]
+    chief_only_hooks=[LogAtEndHook()]
 
     # The MonitoredTrainingSession takes care of session initialization,
     # restoring from a checkpoint, saving to a checkpoint, and closing when done
@@ -83,7 +86,8 @@ elif FLAGS.job_name == "worker":
     with tf.train.MonitoredTrainingSession(master=server.target,
                                            is_chief=(FLAGS.task_index == 0),
                                            checkpoint_dir=LOG_DIR,
-                                           hooks=hooks) as mon_sess:
+                                           hooks=hooks,
+                                           chief_only_hooks=chief_only_hooks) as mon_sess:
       step = 0
       while not mon_sess.should_stop():
         # Run a training step asynchronously.
