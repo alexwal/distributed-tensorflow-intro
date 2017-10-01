@@ -4,7 +4,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 
 BATCH_SIZE = 50
-TRAINING_STEPS = 5000
+TRAINING_STEPS = 1500
 PRINT_EVERY = 100
 LOG_DIR = "/tmp/log"
 
@@ -68,9 +68,14 @@ elif FLAGS.job_name == "worker":
         init_op = tf.global_variables_initializer()
 
 
+    class StopAtStepAndLogHook(tf.train.StopAtStepHook):
+      def end(self, session):
+        test_acc = session.run(accuracy, {x: mnist.test.images, y_: mnist.test.labels})
+        print("Worker: {}, Test-Accuracy: {}".format(FLAGS.task_index, test_acc))
+        super().end(session)
 
     # The StopAtStepHook handles stopping after running given steps.
-    hooks=[tf.train.StopAtStepHook(last_step=TRAINING_STEPS)]
+    hooks=[StopAtStepAndLogHook(last_step=TRAINING_STEPS)]
 
     # The MonitoredTrainingSession takes care of session initialization,
     # restoring from a checkpoint, saving to a checkpoint, and closing when done
@@ -92,8 +97,6 @@ elif FLAGS.job_name == "worker":
               print("Worker : {}, Step: {}, Accuracy (batch): {}".\
                   format(FLAGS.task_index, step, acc))
 
-      test_acc = mon_sess.run(accuracy, {x: mnist.test.images, y_: mnist.test.labels})
-      print("Test-Accuracy: {}".format(test_acc))
 
 
 '''
