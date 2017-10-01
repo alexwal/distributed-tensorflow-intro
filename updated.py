@@ -51,9 +51,7 @@ elif FLAGS.job_name == "worker":
             worker_device="/job:worker/task:%d" % FLAGS.task_index,
             cluster=cluster)):
 
-        global_step = tf.get_variable('global_step', [],
-                                      initializer=tf.constant_initializer(0),
-                                      trainable=False)
+        global_step = tf.contrib.framework.get_or_create_global_step()
 
         x = tf.placeholder(tf.float32, shape=[None, 784], name="x-input")
         y_ = tf.placeholder(tf.float32, shape=[None, 10], name="y-input")
