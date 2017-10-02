@@ -1,4 +1,8 @@
 # Example of distributed tensorflow
+Adapted from:
+*Learning TensorFlow* by Itay Lieder; Yehezkel S. Resheff; Tom Hope. Published by O'Reilly Media, Inc., 2017.
+
+
 ## Latest
 
 To train with 3 workers and 1 parameter server in four processes, run:
