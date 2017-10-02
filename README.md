@@ -4,7 +4,7 @@
 To train with 3 workers and 1 parameter server in four processes, run:
 
 ```bash
-python run_original.py
+python run_updated.py
 ```
 
 Monitor progress in another terminal with:
