@@ -9,8 +9,6 @@ import shutil
 BATCH_SIZE = 50
 TRAINING_STEPS = 1500
 PRINT_EVERY = 100
-LOG_DIR = "/tmp/log"
-if os.path.isdir(LOG_DIR): shutil.rmtree(LOG_DIR) # erase previous logs
 
 parameter_servers = ["localhost:2222"]
 workers = ["localhost:2223",
@@ -19,11 +17,13 @@ workers = ["localhost:2223",
 
 cluster = tf.train.ClusterSpec({"ps": parameter_servers, "worker": workers})
 
-
 tf.app.flags.DEFINE_string("job_name", "", "'ps' / 'worker'")
 tf.app.flags.DEFINE_integer("task_index", 0, "Index of task")
+tf.app.flags.DEFINE_string("log_dir", "/tmp/log", "where to save logs")
+
 FLAGS = tf.app.flags.FLAGS
 
+if os.path.isdir(FLAGS.log_dir): shutil.rmtree(FLAGS.log_dir) # erase previous logs (careful, all threads will run this. Need to only run once...)
 
 # Sets this task's identity and informs other tasks on the cluster about it.
 # (Who is who and who am I.)
@@ -87,7 +87,7 @@ elif FLAGS.job_name == "worker":
     # or an error occurs.
     with tf.train.MonitoredTrainingSession(master=server.target,
                                            is_chief=(FLAGS.task_index == 0),
-                                           checkpoint_dir=LOG_DIR,
+                                           checkpoint_dir=FLAGS.log_dir,
                                            hooks=hooks,
                                            chief_only_hooks=chief_only_hooks) as mon_sess:
       step = 0
