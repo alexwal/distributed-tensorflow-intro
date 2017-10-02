@@ -31,7 +31,7 @@ server = tf.train.Server(cluster,
                          job_name=FLAGS.job_name,
                          task_index=FLAGS.task_index)
 
-mnist = input_data.read_data_sets('hdfs:///MNIST_data', one_hot=True)
+mnist = input_data.read_data_sets('hdfs://MNIST_data', one_hot=True)
 
 
 def net(x):
