@@ -13,6 +13,7 @@ Remember to kill ps server with:
 run_script = 'word_count_efs.py'
 # python3 word_count_efs.py --job_name="ps" --task_index=0
 # python3 word_count_efs.py --job_name="worker" --task_index=0
+# python3 efs/word_count/word_count_efs.py --job_name="worker" --task_index=1
 
 subprocess.Popen('python3 {} --job_name="ps" --task_index=0'.format(run_script),
                  shell=True)

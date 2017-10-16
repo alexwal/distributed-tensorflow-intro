@@ -1,7 +1,4 @@
 import tensorflow as tf
-from tensorflow.contrib import slim
-from tensorflow.examples.tutorials.mnist import input_data
-
 import os
 import shutil
 
@@ -9,14 +6,14 @@ BATCH_SIZE = 50
 TRAINING_STEPS = 1500
 PRINT_EVERY = 100
 
-parameter_servers = ["ec2-54-187-66-19.us-west-2.compute.amazonaws.com:2222"]
-workers = ["ec2-54-212-244-82.us-west-2.compute.amazonaws.com:2222"]
+parameter_servers = ["ec2-54-218-105-143.us-west-2.compute.amazonaws.com:2222"]
+workers = ["ec2-34-212-167-164.us-west-2.compute.amazonaws.com:2222", "ec2-34-211-39-120.us-west-2.compute.amazonaws.com:2222"]
 
 cluster = tf.train.ClusterSpec({"ps": parameter_servers, "worker": workers})
 
 tf.app.flags.DEFINE_string("job_name", "", "'ps' / 'worker'")
 tf.app.flags.DEFINE_integer("task_index", 0, "Index of task")
-tf.app.flags.DEFINE_string("log_dir", "logs", "where to save logs")
+tf.app.flags.DEFINE_string("log_dir", "efs/logs", "where to save logs")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -26,9 +23,7 @@ server = tf.train.Server(cluster,
                          job_name=FLAGS.job_name,
                          task_index=FLAGS.task_index)
 
-filenames = ["word_count_data/shakespeare-00.txt", "word_count_data/shakespeare-01.txt",
-	"word_count_data/shakespeare-02.txt", "word_count_data/shakespeare-03.txt",
-	"word_count_data/shakespeare-04.txt"]
+FILE_PATTERN = 'word_count_data/shakespeare-*.txt'
 
 if FLAGS.job_name == "ps":
 	server.join()
@@ -39,14 +34,17 @@ elif FLAGS.job_name == "worker":
 	    worker_device="/job:worker/task:%d" % FLAGS.task_index,
 	    cluster=cluster)):
 
-		global_step = tf.contrib.framework.get_or_create_global_step()
+		global_step = tf.train.get_or_create_global_step()
+		matched_filenames = tf.train.match_filenames_once(FILE_PATTERN)
+		filenames = tf.train.string_input_producer(matched_filenames, num_epochs=1, shuffle=False)
 
 		# Create graph here
 		# ...
 
 
 	# DATA PIPELINE (only want to go through data once)
-	dataset = tf.contrib.data.Dataset.from_tensor_slices(filenames)
+	dataset = tf.data.Dataset.list_files(FILE_PATTERN)
+	dataset = dataset.shard(len(workers), FLAGS.task_index)
 
 	# Use `Dataset.flat_map()` to transform each file as a separate nested dataset,
 	# and then concatenate their contents sequentially into a single "flat" dataset.
@@ -54,7 +52,7 @@ elif FLAGS.job_name == "worker":
 	# Flatten text files.
 	dataset = dataset.flat_map(
 			lambda filename: (
-				tf.contrib.data.TextLineDataset(filename)))
+				tf.data.TextLineDataset(filename)))
 
 	dataset = dataset.batch(32)
 
